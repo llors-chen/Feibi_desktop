@@ -1,0 +1,185 @@
+{
+  "window": {
+    "title": "Feibi Pet",
+    "stay_on_top": true,
+    "draggable": true,
+    "click_through": false,
+    "transparent_color": "#00FF00",
+    "alpha": 1.0,
+    "scale": 1,
+    "scale_mode": "nearest",
+    "initial_position": {
+      "anchor": "bottom_right",
+      "x": 20,
+      "y": 20
+    }
+  },
+  "audio": {
+    "enabled": true,
+    "volume_percent": 50
+  },
+  "sound": {
+    "enabled": true,
+    "volume_percent": 50,
+    "speaking_intro": {
+      "loop_pause_seconds": 0,
+      "sounds": [
+        "assets/sounds/soundpak0",
+        "assets/sounds/soundpak1"
+      ]
+    },
+    "chat_loop": {
+      "loop_pause_seconds": 3.0,
+      "sounds": [
+        "assets/sounds/soundpak2"
+      ]
+    }
+  },
+  "behavior": {
+    "default_action": "idle",
+    "randomize_gif_on_loop": true,
+    "transition_duration_ms": 800,
+    "idle_actions": [
+      {
+        "action": "idle",
+        "weight": 20,
+        "duration_ms": 4800
+      },
+      {
+        "action": "speaking",
+        "weight": 1,
+        "duration_ms": 5000
+      },
+      {
+        "action": "eating",
+        "weight": 1,
+        "duration_ms": 0
+      },
+      {
+        "action": "sleep",
+        "weight": 1,
+        "duration_ms": 0
+      },
+      {
+        "action": "push",
+        "weight": 1,
+        "duration_ms": 0
+      }
+    ]
+  },
+  "chat": {
+    "enabled": true,
+    "api_key": "7086f7a4-dfbe-4832-afbc-9d6b3c593ea1",
+    "model": "ep-20260325142137-jxd6t",
+    "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+    "timeout_seconds": 30,
+    "max_history": 6,
+    "skill": "phoebe",
+    "skills_dir": "skills",
+    "system_prompt": "",
+    "bubble_max_width": 320,
+    "bubble_auto_hide_ms": 8000,
+    "stages": {
+      "input": {
+        "action": "push",
+        "duration_ms": 0,
+        "transition_duration_ms": 1000,
+        "play_sound": true,
+        "sounds": []
+      },
+      "waiting": {
+        "action": "eating",
+        "duration_ms": 0,
+        "transition_duration_ms": 1000,
+        "play_sound": false,
+        "sounds": []
+      },
+      "reply": {
+        "action": "speaking",
+        "duration_ms": 8000,
+        "transition_duration_ms": 1000,
+        "play_sound": true,
+        "sounds": [
+          "assets/sounds/soundpak2"
+        ]
+      },
+      "error": {
+        "action": "idle",
+        "duration_ms": 0,
+        "transition_duration_ms": 1000,
+        "play_sound": false,
+        "sounds": []
+      }
+    }
+  },
+  "actions": {
+    "idle": {
+      "gifs": [
+        "assets/gifs/idle.gif"
+      ],
+      "sounds": [],
+      "play_sound_on_enter": false,
+      "auto_return_ms": 0,
+      "return_to": "idle",
+      "transition_duration_ms": 800,
+      "offset_x": 0,
+      "offset_y": 0,
+      "flip_horizontal": false
+    },
+    "push": {
+      "gifs": [
+        "assets/gifs/push.gif"
+      ],
+      "sounds": [],
+      "play_sound_on_enter": false,
+      "auto_return_ms": 0,
+      "return_to": "idle",
+      "transition_duration_ms": 800,
+      "offset_x": 80,
+      "offset_y": 0,
+      "flip_horizontal": true
+    },
+    "eating": {
+      "gifs": [
+        "assets/gifs/eating.png"
+      ],
+      "sounds": [],
+      "play_sound_on_enter": false,
+      "auto_return_ms": 0,
+      "return_to": "idle",
+      "transition_duration_ms": 800,
+      "offset_x": 0,
+      "offset_y": 0,
+      "flip_horizontal": false
+    },
+    "speaking": {
+      "gifs": [
+        "assets/gifs/talk.gif"
+      ],
+      "sounds": [
+        "assets/sounds/soundpak0",
+        "assets/sounds/soundpak1"
+      ],
+      "play_sound_on_enter": true,
+      "auto_return_ms": 0,
+      "return_to": "idle",
+      "transition_duration_ms": 1200,
+      "offset_x": 0,
+      "offset_y": 0,
+      "flip_horizontal": false
+    },
+    "sleep": {
+      "gifs": [
+        "assets/gifs/sleep.gif"
+      ],
+      "sounds": [],
+      "play_sound_on_enter": false,
+      "auto_return_ms": 0,
+      "return_to": "idle",
+      "transition_duration_ms": 1400,
+      "offset_x": 80,
+      "offset_y": 0,
+      "flip_horizontal": false
+    }
+  }
+}

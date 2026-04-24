@@ -1,0 +1,17 @@
+[project]
+name = "feibi-pet"
+version = "0.1.0"
+description = "Configurable desktop pet framework with idle, eating, and speaking actions."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy>=1.26.0",
+    "openai>=1.30.0",
+    "Pillow>=10.0.0",
+    "sounddevice>=0.4.6",
+    "soundfile>=0.12.1",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
