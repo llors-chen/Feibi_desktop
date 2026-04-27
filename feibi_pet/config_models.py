@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from .config_actions import ActionConfig, BehaviorConfig, IdleActionWeight
-from .config_api import ChatConfig, ChatStageConfig
+from .config_api import ChatConfig, ChatMemoryConfig, ChatStageConfig
 from .config_audio import AudioConfig, SoundConfig, SoundPakConfig
 from .config_window import Position, WindowConfig
 
@@ -29,6 +29,7 @@ __all__ = [
     "AudioConfig",
     "BehaviorConfig",
     "ChatConfig",
+    "ChatMemoryConfig",
     "ChatStageConfig",
     "ConfigError",
     "IdleActionWeight",

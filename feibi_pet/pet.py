@@ -11,6 +11,7 @@ from tkinter import messagebox
 from .animation import GifSequence, load_gif_sequence
 from .audio import AudioPlayer
 from .chat_client import ChatClient, ChatError
+from .chat_memory import ChatMemoryStore, MemoryEntry
 from .chat_ui import ChatInputDialog, RoundedBubbleWindow
 from .config import ChatStageConfig, ConfigError, PetConfig, load_config
 from .windowing import (
@@ -45,6 +46,7 @@ class DesktopPet:
         self.action_sequences: dict[str, list[GifSequence]] = {}
         self.config: PetConfig | None = None
         self.chat_client: ChatClient | None = None
+        self.chat_memory: ChatMemoryStore | None = None
         self.chat_history: list[dict[str, str]] = []
         self.chat_request_inflight = False
         self.chat_restore_action: str | None = None
@@ -103,9 +105,10 @@ class DesktopPet:
         self.config = config
         self.action_sequences = sequences
         self.chat_client = ChatClient(config.chat)
+        self.chat_memory = ChatMemoryStore(config.chat.memory)
         self.audio_player.set_enabled(config.audio.enabled)
         self.audio_player.set_volume(config.sound.volume_percent)
-        self.chat_history.clear()
+        self.chat_history[:] = self.chat_memory.restore_recent()
         self.chat_request_inflight = False
         self.chat_restore_action = None
         self.cancel_chat_restore()
@@ -629,7 +632,14 @@ class DesktopPet:
     def _request_chat_reply(self, prompt: str) -> None:
         assert self.chat_client is not None
         try:
-            reply = self.chat_client.request_reply(self.chat_history, prompt)
+            memory_context = ""
+            if self.chat_memory is not None:
+                memory_context = self.chat_memory.build_context(prompt)
+            reply = self.chat_client.request_reply(
+                self.chat_history,
+                prompt,
+                memory_context=memory_context,
+            )
         except Exception as exc:
             self.root.after(
                 0,
@@ -658,6 +668,11 @@ class DesktopPet:
         if success:
             self.append_chat_history("user", prompt)
             self.append_chat_history("assistant", reply)
+            threading.Thread(
+                target=self.remember_chat_exchange,
+                args=(prompt, reply),
+                daemon=True,
+            ).start()
             self.play_chat_stage(self.config.chat.reply_stage)
         else:
             self.play_chat_stage(self.config.chat.error_stage)
@@ -675,6 +690,32 @@ class DesktopPet:
             self.chat_history.clear()
             return
         self.chat_history[:] = self.chat_history[-max_messages:]
+
+    def remember_chat_exchange(self, prompt: str, reply: str) -> None:
+        if self.chat_memory is None:
+            return
+        self.chat_memory.append_exchange(
+            prompt,
+            reply,
+            self.summarize_memory_entries,
+        )
+
+    def summarize_memory_entries(
+        self,
+        existing_summary: str,
+        entries: list[MemoryEntry],
+    ) -> str:
+        if not self.chat_client:
+            return existing_summary
+        rendered_entries = []
+        for index, entry in enumerate(entries, start=1):
+            rendered_entries.append(
+                f"{index}. 用户: {entry.user}\n   菲比: {entry.assistant}"
+            )
+        return self.chat_client.summarize_memory(
+            existing_summary,
+            "\n".join(rendered_entries),
+        )
 
     def resolve_chat_action_name(self) -> str:
         if self.config:

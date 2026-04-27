@@ -38,6 +38,8 @@ class ChatClient:
         self,
         history: Sequence[dict[str, str]],
         user_message: str,
+        *,
+        memory_context: str = "",
     ) -> str:
         self.ensure_ready()
         client = OpenAI(
@@ -48,7 +50,42 @@ class ChatClient:
 
         completion = client.chat.completions.create(
             model=self.config.model,
-            messages=self._build_messages(history, user_message),
+            messages=self._build_messages(history, user_message, memory_context),
+        )
+        return self._extract_text(completion)
+
+    def summarize_memory(
+        self,
+        existing_summary: str,
+        exchanges_text: str,
+    ) -> str:
+        self.ensure_ready()
+        client = OpenAI(
+            api_key=self.config.api_key,
+            base_url=self.config.base_url or None,
+            timeout=self.config.timeout_seconds,
+        )
+        messages = [
+            {
+                "role": "system",
+                "content": (
+                    "你是桌宠菲比的长期记忆整理器。请把旧对话压缩成简洁、可检索的中文记忆。"
+                    "保留用户偏好、设定、长期事实、重要事件、承诺、称呼和情绪线索；"
+                    "删除寒暄、重复内容和无意义细节。输出要点列表即可。"
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"已有记忆摘要:\n{existing_summary or '无'}\n\n"
+                    f"需要压缩的旧对话:\n{exchanges_text}\n\n"
+                    "请合并为新的长期记忆摘要，尽量控制在 4000 字以内。"
+                ),
+            },
+        ]
+        completion = client.chat.completions.create(
+            model=self.config.model,
+            messages=messages,
         )
         return self._extract_text(completion)
 
@@ -56,11 +93,24 @@ class ChatClient:
         self,
         history: Sequence[dict[str, str]],
         user_message: str,
+        memory_context: str = "",
     ) -> list[dict[str, str]]:
         messages: list[dict[str, str]] = []
         system_prompt = self._resolve_system_prompt()
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
+        if memory_context.strip():
+            messages.append(
+                {
+                    "role": "system",
+                    "content": (
+                        "以下是菲比长期记忆中与当前对话可能相关的信息。"
+                        "它可能不完整或只模糊相关，请结合当前用户输入使用，"
+                        "不要逐字复述给用户。\n\n"
+                        f"{memory_context.strip()}"
+                    ),
+                }
+            )
 
         if self.config.max_history > 0:
             messages.extend(history[-self.config.max_history * 2 :])

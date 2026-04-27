@@ -54,6 +54,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "skill": "phoebe",
         "skills_dir": "skills",
         "system_prompt": "",
+        "memory": {
+            "enabled": True,
+            "path": "memory/chat_memory.json",
+            "max_bytes": 1024000,
+            "recent_turns_after_compress": 10,
+            "retrieval_limit": 5,
+        },
         "bubble_max_width": 320,
         "bubble_auto_hide_ms": 15000,
         "stages": {

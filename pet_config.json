@@ -74,6 +74,13 @@
     "base_url": "https://ark.cn-beijing.volces.com/api/v3",
     "timeout_seconds": 30,
     "max_history": 6,
+    "memory": {
+      "enabled": true,
+      "path": "memory/chat_memory.json",
+      "max_bytes": 1024000,
+      "recent_turns_after_compress": 10,
+      "retrieval_limit": 5
+    },
     "skill": "phoebe",
     "skills_dir": "skills",
     "system_prompt": "",

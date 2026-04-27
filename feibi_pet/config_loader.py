@@ -9,6 +9,7 @@ from .config_models import (
     AudioConfig,
     BehaviorConfig,
     ChatConfig,
+    ChatMemoryConfig,
     ChatStageConfig,
     ConfigError,
     PetConfig,
@@ -136,6 +137,9 @@ def load_config(config_path: str | Path) -> PetConfig:
     chat_stages_block = chat_block.get("stages") or {}
     if not isinstance(chat_stages_block, dict):
         chat_stages_block = {}
+    memory_block = chat_block.get("memory") or {}
+    if not isinstance(memory_block, dict):
+        memory_block = {}
 
     chat = ChatConfig(
         enabled=coerce_bool(chat_block.get("enabled"), False),
@@ -155,6 +159,28 @@ def load_config(config_path: str | Path) -> PetConfig:
         skill=skill,
         skill_path=skill_path,
         system_prompt=coerce_optional_text(chat_block.get("system_prompt"), ""),
+        memory=ChatMemoryConfig(
+            enabled=coerce_bool(memory_block.get("enabled"), True),
+            path=_resolve_memory_path(memory_block.get("path"), base_dir),
+            max_bytes=coerce_int(
+                memory_block.get("max_bytes"),
+                1000 * 1024,
+                min_value=16 * 1024,
+                max_value=64 * 1024 * 1024,
+            ),
+            recent_turns_after_compress=coerce_int(
+                memory_block.get("recent_turns_after_compress"),
+                10,
+                min_value=0,
+                max_value=100,
+            ),
+            retrieval_limit=coerce_int(
+                memory_block.get("retrieval_limit"),
+                5,
+                min_value=0,
+                max_value=30,
+            ),
+        ),
         bubble_max_width=coerce_int(
             chat_block.get("bubble_max_width"),
             320,
@@ -244,6 +270,15 @@ def load_config(config_path: str | Path) -> PetConfig:
         chat=chat,
         actions=actions,
     )
+
+
+def _resolve_memory_path(value: object, base_dir: Path) -> Path:
+    if not isinstance(value, str) or not value.strip():
+        return (base_dir / "memory" / "chat_memory.json").resolve()
+    path = Path(value.strip())
+    if not path.is_absolute():
+        path = base_dir / path
+    return path.resolve()
 
 
 def _load_actions(

@@ -15,6 +15,15 @@ class ChatStageConfig:
 
 
 @dataclass(slots=True)
+class ChatMemoryConfig:
+    enabled: bool = True
+    path: Path = Path("memory/chat_memory.json")
+    max_bytes: int = 1000 * 1024
+    recent_turns_after_compress: int = 10
+    retrieval_limit: int = 5
+
+
+@dataclass(slots=True)
 class ChatConfig:
     enabled: bool = False
     api_key: str = ""
@@ -25,6 +34,7 @@ class ChatConfig:
     skill: str = ""
     skill_path: Path | None = None
     system_prompt: str = ""
+    memory: ChatMemoryConfig = field(default_factory=ChatMemoryConfig)
     bubble_max_width: int = 320
     bubble_auto_hide_ms: int = 15000
     input_stage: ChatStageConfig = field(default_factory=ChatStageConfig)

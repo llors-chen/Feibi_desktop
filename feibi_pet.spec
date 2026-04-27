@@ -22,6 +22,7 @@ a = Analysis(
         'feibi_pet.config',
         'feibi_pet.audio',
         'feibi_pet.chat_client',
+        'feibi_pet.chat_memory',
         'feibi_pet.chat_ui',
         'PIL._tkinter_finder',
     ],

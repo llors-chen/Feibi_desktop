@@ -1,0 +1,25 @@
+# Python cache / bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build / packaging outputs
+build/
+dist/
+*.egg-info/
+*.spec.bak
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Local runtime memory
+memory/*
+!memory/.gitkeep
+
+# Tooling / local noise
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
