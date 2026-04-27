@@ -63,11 +63,13 @@ class DesktopPet:
         self.drag_offset_x = 0
         self.drag_offset_y = 0
 
-        self.response_bubble = RoundedBubbleWindow(root)
+        chatbox_image_path = self.resolve_chatbox_image_path()
+        self.response_bubble = RoundedBubbleWindow(root, chatbox_image_path)
         self.chat_dialog = ChatInputDialog(
             root,
             self.submit_chat_prompt,
             on_close=self.on_chat_dialog_close,
+            border_image_path=chatbox_image_path,
         )
 
         self.label.bind("<ButtonPress-1>", self.on_drag_start)
@@ -125,6 +127,14 @@ class DesktopPet:
         if self.config:
             return self.config.behavior.default_action
         return self.current_action
+
+    def resolve_chatbox_image_path(self) -> Path | None:
+        image_dir = self.config_path.parent / "assets" / "images"
+        for filename in ("chatbox copy.png", "chatbox.png"):
+            path = image_dir / filename
+            if path.exists():
+                return path
+        return None
 
     def is_default_action(self, action_name: str) -> bool:
         return bool(self.config and action_name == self.config.behavior.default_action)
@@ -537,6 +547,8 @@ class DesktopPet:
     def trigger_menu_action(self, action_name: str) -> None:
         if not self.config or action_name not in self.action_sequences:
             return
+        if self.chat_dialog.is_visible():
+            self.chat_dialog.hide(notify=False)
         if self.is_default_action(action_name):
             self.set_action(action_name, use_transition=True)
             return
@@ -580,6 +592,10 @@ class DesktopPet:
         if self.chat_request_inflight:
             self.show_chat_feedback("正在等待模型回复，请稍候。", auto_hide_ms=3000)
             return
+
+        if self.chat_dialog.is_visible():
+            self.chat_dialog.reset()
+            self.response_bubble.hide()
 
         self.play_chat_stage(self.config.chat.input_stage)
 

@@ -6,7 +6,7 @@
     "click_through": false,
     "transparent_color": "#00FF00",
     "alpha": 1.0,
-    "scale": 1,
+    "scale": 0.5,
     "scale_mode": "nearest",
     "initial_position": {
       "anchor": "bottom_right",
@@ -77,7 +77,7 @@
     "skill": "phoebe",
     "skills_dir": "skills",
     "system_prompt": "",
-    "bubble_max_width": 320,
+    "bubble_max_width": 260,
     "bubble_auto_hide_ms": 8000,
     "stages": {
       "input": {

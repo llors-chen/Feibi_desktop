@@ -7,6 +7,23 @@ from typing import Callable
 from PIL import Image, ImageTk
 
 TRANSPARENT_KEY = "#FF00FF"
+CHATBOX_TRANSPARENT_THRESHOLD = 12
+CHATBOX_WIDTH = 340
+CHATBOX_HEIGHT = 76
+CHATBOX_SOURCE_MARGINS = (510, 150, 185, 145)
+CHATBOX_OUTPUT_MARGINS = (119, 35, 43, 34)
+CHATBOX_CONTENT_X = 119
+CHATBOX_CONTENT_Y = 35
+CHATBOX_CONTENT_RIGHT = 43
+CHATBOX_CONTENT_BOTTOM = 34
+CHATBOX_TEXT_BG = "#91D7F2"
+CHATBOX_TEXT_FG = "#2D171C"
+INPUT_BORDER_OUTER = "#3A080D"
+INPUT_BORDER_INNER = "#FFFFFF"
+INPUT_RADIUS = 16
+REPLY_BUBBLE_BG = "#A7DFF6"
+REPLY_BUBBLE_BORDER = "#3A080D"
+REPLY_BUBBLE_TEXT = "#2D171C"
 
 
 def draw_rounded_rectangle(
@@ -47,11 +64,56 @@ def draw_rounded_rectangle(
     return canvas.create_polygon(points, smooth=True, splinesteps=24, **kwargs)
 
 
-class NinePatchBorder:
-    def __init__(self, image_path: str | Path, border_width: int) -> None:
-        self.border_width = border_width
-        self.original_image = Image.open(str(image_path))
-        self.image_refs = []
+class NinePatchImage:
+    def __init__(
+        self,
+        image_path: str | Path,
+        source_margins: tuple[int, int, int, int],
+    ) -> None:
+        self.original_image = Image.open(str(image_path)).convert("RGBA")
+        self.source_margins = source_margins
+        self.image_ref: ImageTk.PhotoImage | None = None
+
+    def render(
+        self,
+        width: int,
+        height: int,
+        output_margins: tuple[int, int, int, int],
+    ) -> Image.Image:
+        img = self.original_image
+        img_w, img_h = img.size
+
+        if width <= 0 or height <= 0:
+            return Image.new("RGBA", (1, 1), (0, 0, 0, 0))
+
+        src_left, src_top, src_right, src_bottom = self.source_margins
+        dst_left, dst_top, dst_right, dst_bottom = self._fit_margins(
+            width,
+            height,
+            output_margins,
+        )
+        src_x = (0, src_left, img_w - src_right, img_w)
+        src_y = (0, src_top, img_h - src_bottom, img_h)
+        dst_x = (0, dst_left, width - dst_right, width)
+        dst_y = (0, dst_top, height - dst_bottom, height)
+        output = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+
+        for row in range(3):
+            for col in range(3):
+                sx1, sx2 = src_x[col], src_x[col + 1]
+                sy1, sy2 = src_y[row], src_y[row + 1]
+                dx1, dx2 = dst_x[col], dst_x[col + 1]
+                dy1, dy2 = dst_y[row], dst_y[row + 1]
+                dst_w = dx2 - dx1
+                dst_h = dy2 - dy1
+                if sx2 <= sx1 or sy2 <= sy1 or dst_w <= 0 or dst_h <= 0:
+                    continue
+                region = img.crop((sx1, sy1, sx2, sy2))
+                if region.size != (dst_w, dst_h):
+                    region = region.resize((dst_w, dst_h), Image.LANCZOS)
+                output.alpha_composite(region, (dx1, dy1))
+
+        return output
 
     def draw(
         self,
@@ -60,41 +122,66 @@ class NinePatchBorder:
         y: int,
         width: int,
         height: int,
+        output_margins: tuple[int, int, int, int],
+        *,
+        tag: str = "nine_patch",
     ) -> None:
-        self.image_refs.clear()
-        bw = self.border_width
-        img = self.original_image
-        img_w, img_h = img.size
+        rendered = self.render(width, height, output_margins)
+        self.image_ref = ImageTk.PhotoImage(
+            flatten_alpha_to_key(rendered, TRANSPARENT_KEY, CHATBOX_TRANSPARENT_THRESHOLD)
+        )
+        canvas.create_image(x, y, anchor="nw", image=self.image_ref, tags=tag)
 
-        if width <= 0 or height <= 0:
-            return
+    def _fit_margins(
+        self,
+        width: int,
+        height: int,
+        margins: tuple[int, int, int, int],
+    ) -> tuple[int, int, int, int]:
+        left, top, right, bottom = margins
+        if left + right > width:
+            scale = width / max(1, left + right)
+            left = int(left * scale)
+            right = max(0, width - left)
+        if top + bottom > height:
+            scale = height / max(1, top + bottom)
+            top = int(top * scale)
+            bottom = max(0, height - top)
+        return left, top, right, bottom
 
-        center_w = max(1, width - bw * 2)
-        center_h = max(1, height - bw * 2)
 
-        regions = [
-            (0, 0, bw, bw, x, y, bw, bw),
-            (img_w - bw, 0, img_w, bw, x + width - bw, y, bw, bw),
-            (0, img_h - bw, bw, img_h, x, y + height - bw, bw, bw),
-            (img_w - bw, img_h - bw, img_w, img_h, x + width - bw, y + height - bw, bw, bw),
-            (bw, 0, img_w - bw, bw, x + bw, y, center_w, bw),
-            (bw, img_h - bw, img_w - bw, img_h, x + bw, y + height - bw, center_w, bw),
-            (0, bw, bw, img_h - bw, x, y + bw, bw, center_h),
-            (img_w - bw, bw, img_w, img_h - bw, x + width - bw, y + bw, bw, center_h),
-            (bw, bw, img_w - bw, img_h - bw, x + bw, y + bw, center_w, center_h),
-        ]
+def flatten_alpha_to_key(
+    image: Image.Image,
+    transparent_key: str,
+    alpha_threshold: int,
+) -> Image.Image:
+    key = tuple(int(transparent_key[i : i + 2], 16) for i in (1, 3, 5))
+    output = Image.new("RGB", image.size, key)
+    rgba = image.convert("RGBA")
+    pixels = rgba.load()
+    out_pixels = output.load()
+    width, height = rgba.size
 
-        for src_x, src_y, src_x2, src_y2, dst_x, dst_y, dst_w, dst_h in regions:
-            region = img.crop((src_x, src_y, src_x2, src_y2))
-            if dst_w > 0 and dst_h > 0:
-                region = region.resize((dst_w, dst_h), Image.LANCZOS)
-            photo = ImageTk.PhotoImage(region)
-            self.image_refs.append(photo)
-            canvas.create_image(dst_x, dst_y, anchor="nw", image=photo)
+    for y in range(height):
+        for x in range(width):
+            r, g, b, a = pixels[x, y]
+            if a > alpha_threshold:
+                out_pixels[x, y] = (r, g, b)
+
+    return output
 
 
 class RoundedBubbleWindow:
-    def __init__(self, master: tk.Misc) -> None:
+    def __init__(
+        self,
+        master: tk.Misc,
+        border_image_path: str | Path | None = None,
+    ) -> None:
+        self.background = (
+            NinePatchImage(border_image_path, CHATBOX_SOURCE_MARGINS)
+            if border_image_path is not None
+            else None
+        )
         self.window = tk.Toplevel(master)
         self.window.withdraw()
         self.window.overrideredirect(True)
@@ -113,30 +200,13 @@ class RoundedBubbleWindow:
         )
         self.canvas.pack()
 
-        self.text_font = tkfont.Font(family="Microsoft YaHei UI", size=10)
-        self.label = tk.Label(
-            self.window,
-            bg="white",
-            fg="#202124",
-            justify="left",
-            anchor="nw",
-            font=self.text_font,
-            padx=0,
-            pady=0,
-        )
+        self.text_font = tkfont.Font(family="Microsoft YaHei UI", size=9)
 
         self.width = 0
         self.height = 0
-        self.body_height = 0
         self.anchor_x = 0
         self.anchor_y = 0
         self.hide_job: str | None = None
-        self.tail_height = 14
-        self.tail_half_width = 12
-        self.border_width = 0
-        self.corner_radius = 20
-        self.border_color = "#111111"
-        self.fill_color = "white"
 
     def show(
         self,
@@ -148,28 +218,41 @@ class RoundedBubbleWindow:
         auto_hide_ms: int,
     ) -> None:
         self.cancel_hide()
-        padding_x = 18
-        padding_y = 12
 
         self.anchor_x = anchor_x
         self.anchor_y = anchor_y
 
-        self.label.configure(text=text, wraplength=max_width)
-        self.label.update_idletasks()
+        text_id = self.canvas.create_text(
+            0,
+            0,
+            anchor="nw",
+            text=text,
+            width=max_width,
+            font=self.text_font,
+            fill=REPLY_BUBBLE_TEXT,
+            tags=("measure_text",),
+        )
+        bbox = self.canvas.bbox(text_id) or (0, 0, max_width, 24)
+        self.canvas.delete("measure_text")
+        text_width = min(max_width, max(1, bbox[2] - bbox[0]))
+        text_height = max(1, bbox[3] - bbox[1])
 
-        inset = self.border_width + 1
-        self.body_height = self.label.winfo_reqheight() + padding_y * 2 + inset * 2
-        self.width = self.label.winfo_reqwidth() + padding_x * 2 + inset * 2
-        self.height = self.body_height + self.tail_height
+        self.width = max(260, text_width + CHATBOX_CONTENT_X + CHATBOX_CONTENT_RIGHT)
+        self.height = max(92, text_height + CHATBOX_CONTENT_Y + CHATBOX_CONTENT_BOTTOM)
 
         self.canvas.configure(width=self.width, height=self.height)
         self.canvas.delete("all")
-        self.draw_bubble(self.width // 2)
-        self.canvas.create_window(
-            inset + padding_x,
-            inset + padding_y,
+        self.draw_background()
+        content_width = max(1, self.width - CHATBOX_CONTENT_X - CHATBOX_CONTENT_RIGHT)
+        self.canvas.create_text(
+            CHATBOX_CONTENT_X,
+            CHATBOX_CONTENT_Y,
             anchor="nw",
-            window=self.label,
+            text=text,
+            width=content_width,
+            font=self.text_font,
+            fill=REPLY_BUBBLE_TEXT,
+            tags=("reply_text",),
         )
         self.reposition(anchor_x, anchor_y)
         self.window.deiconify()
@@ -177,41 +260,29 @@ class RoundedBubbleWindow:
         if auto_hide_ms > 0:
             self.hide_job = self.window.after(auto_hide_ms, self.hide)
 
-    def draw_bubble(self, tail_center_x: int) -> None:
-        if self.width <= 0 or self.height <= 0:
+    def draw_background(self) -> None:
+        if self.background is None:
+            draw_rounded_rectangle(
+                self.canvas,
+                2,
+                2,
+                self.width - 2,
+                self.height - 2,
+                radius=18,
+                fill=REPLY_BUBBLE_BG,
+                outline=REPLY_BUBBLE_BORDER,
+                width=3,
+                tags=("bubble_bg",),
+            )
             return
-        self.canvas.delete("bubble_bg")
-        inset = self.border_width + 1
-        body_bottom = self.body_height
-        min_tail_x = inset + self.corner_radius + self.tail_half_width
-        max_tail_x = self.width - inset - self.corner_radius - self.tail_half_width
-        tail_center_x = max(min_tail_x, min(max_tail_x, tail_center_x))
-        tail_base_y = body_bottom - self.border_width
-
-        self.canvas.create_polygon(
-            tail_center_x - self.tail_half_width,
-            tail_base_y,
-            tail_center_x + self.tail_half_width,
-            tail_base_y,
-            tail_center_x,
-            self.height - inset,
-            fill=self.fill_color,
-            outline=self.border_color,
-            width=self.border_width,
-            joinstyle="round",
-            tags=("bubble_bg",),
-        )
-        draw_rounded_rectangle(
+        self.background.draw(
             self.canvas,
-            inset,
-            inset,
-            self.width - inset,
-            body_bottom,
-            radius=self.corner_radius,
-            fill=self.fill_color,
-            outline=self.border_color,
-            width=self.border_width,
-            tags=("bubble_bg",),
+            0,
+            0,
+            self.width,
+            self.height,
+            CHATBOX_OUTPUT_MARGINS,
+            tag="bubble_bg",
         )
 
     def reposition(self, anchor_x: int, anchor_y: int) -> None:
@@ -224,7 +295,6 @@ class RoundedBubbleWindow:
         y = anchor_y - self.height - 4
         x = max(8, min(screen_width - self.width - 8, x))
         y = max(8, y)
-        self.draw_bubble(anchor_x - x)
         self.window.geometry(f"{self.width}x{self.height}+{x}+{y}")
 
     def cancel_hide(self) -> None:
@@ -252,14 +322,14 @@ class ChatInputDialog:
         on_close: Callable[[], None] | None = None,
         border_image_path: str | Path | None = None,
     ) -> None:
+        del border_image_path
         self.on_submit = on_submit
         self.on_close = on_close
-        self.width = 380
-        self.height = 248
+        self.width = CHATBOX_WIDTH
+        self.height = CHATBOX_HEIGHT
         self.anchor_x = 0
         self.anchor_y = 0
-        self.use_image_border = border_image_path is not None
-        self.bg_image_ref = None
+        self._is_submitting = False
 
         self.window = tk.Toplevel(master)
         self.window.withdraw()
@@ -281,115 +351,81 @@ class ChatInputDialog:
         )
         self.canvas.pack()
 
-        if self.use_image_border:
-            self._load_background_image(border_image_path)
-            self._draw_background()
-            padding_x = 40
-            padding_y = 30
-            content_bg = "white"
-        else:
-            draw_rounded_rectangle(
-                self.canvas,
-                2,
-                2,
-                self.width - 2,
-                self.height - 2,
-                radius=20,
-                fill="white",
-                outline="",
-                width=0,
-            )
-            padding_x = 18
-            padding_y = 16
-            content_bg = "white"
+        self._draw_background()
+        padding_x = 18
+        padding_y = 14
+        content_width = self.width - padding_x * 2
+        content_height = self.height - padding_y * 2
+        content_bg = CHATBOX_TEXT_BG
 
         self.content = tk.Frame(
             self.window,
             bg=content_bg,
-            width=self.width - padding_x * 2,
-            height=self.height - padding_y * 2,
+            width=content_width,
+            height=content_height,
         )
         self.content.grid_columnconfigure(0, weight=1)
-        self.content.grid_rowconfigure(1, weight=1)
+        self.content.grid_rowconfigure(0, weight=1)
         self.content.grid_propagate(False)
         self.canvas.create_window(
             padding_x,
             padding_y,
             anchor="nw",
             window=self.content,
-            width=self.width - padding_x * 2,
-            height=self.height - padding_y * 2,
+            width=content_width,
+            height=content_height,
         )
-
-        self.title_label = tk.Label(
-            self.content,
-            text="和桌宠对话",
-            bg=content_bg,
-            fg="#202124",
-            font=("Microsoft YaHei UI", 10, "bold"),
-        )
-        self.title_label.grid(row=0, column=0, sticky="w")
 
         self.text = tk.Text(
             self.content,
             width=36,
             height=6,
             relief="flat",
+            borderwidth=0,
+            highlightthickness=0,
             wrap="word",
             bg=content_bg,
-            fg="#202124",
-            font=("Microsoft YaHei UI", 10),
-            insertbackground="#202124",
-        )
-        self.text.grid(row=1, column=0, sticky="nsew", pady=(10, 10))
-
-        self.buttons = tk.Frame(self.content, bg=content_bg)
-        self.buttons.grid(row=2, column=0, sticky="e")
-
-        self.close_button = tk.Button(
-            self.buttons,
-            text="关闭",
-            command=self.hide,
-            relief="flat",
-            bd=0,
-            padx=12,
-            pady=6,
-            bg="#F3F4F6",
-            activebackground="#E5E7EB",
+            fg=CHATBOX_TEXT_FG,
             font=("Microsoft YaHei UI", 9),
+            insertbackground=CHATBOX_TEXT_FG,
+            padx=0,
+            pady=0,
         )
-        self.close_button.pack(side="right")
-
-        self.send_button = tk.Button(
-            self.buttons,
-            text="发送",
-            command=self.submit,
-            relief="flat",
-            bd=0,
-            padx=12,
-            pady=6,
-            bg="#111827",
-            fg="white",
-            activebackground="#374151",
-            activeforeground="white",
-            font=("Microsoft YaHei UI", 9, "bold"),
-        )
-        self.send_button.pack(side="right", padx=(0, 8))
+        self.text.grid(row=0, column=0, sticky="nsew")
 
         self.window.bind("<Escape>", lambda _event: self.hide())
-        self.text.bind("<Control-Return>", lambda _event: self.submit())
+        self.window.bind("<Button-3>", self.handle_refresh)
+        self.canvas.bind("<Button-3>", self.handle_refresh)
+        self.content.bind("<Button-3>", self.handle_refresh)
+        self.text.bind("<Button-3>", self.handle_refresh)
         self.text.bind("<Return>", self.handle_return_submit)
 
-    def _load_background_image(self, image_path: str | Path) -> None:
-        self.original_bg_image = Image.open(str(image_path))
-
     def _draw_background(self) -> None:
-        self.canvas.delete("bg_image")
-        scaled = self.original_bg_image.resize(
-            (self.width, self.height), Image.LANCZOS
+        self.canvas.delete("input_bg")
+        draw_rounded_rectangle(
+            self.canvas,
+            1,
+            1,
+            self.width - 1,
+            self.height - 1,
+            radius=INPUT_RADIUS,
+            fill=CHATBOX_TEXT_BG,
+            outline=INPUT_BORDER_OUTER,
+            width=3,
+            tags=("input_bg",),
         )
-        self.bg_image_ref = ImageTk.PhotoImage(scaled)
-        self.canvas.create_image(0, 0, anchor="nw", image=self.bg_image_ref, tags="bg_image")
+        draw_rounded_rectangle(
+            self.canvas,
+            6,
+            6,
+            self.width - 6,
+            self.height - 6,
+            radius=INPUT_RADIUS - 5,
+            fill="",
+            outline=INPUT_BORDER_INNER,
+            width=2,
+            tags=("input_bg",),
+        )
 
     def show(self, anchor_x: int, anchor_y: int) -> None:
         self.anchor_x = anchor_x
@@ -424,10 +460,25 @@ class ChatInputDialog:
             return None
         return self.submit()
 
-    def hide(self) -> None:
+    def reset(self) -> None:
+        self._is_submitting = False
+        self.text.delete("1.0", "end")
+
+    def handle_refresh(self, event: tk.Event) -> str:
+        del event
+        self.reset()
+        self.hide()
+        return "break"
+
+    def hide(self, *, notify: bool = True) -> None:
         was_visible = self.is_visible()
         self.window.withdraw()
-        if was_visible and not getattr(self, '_is_submitting', False) and self.on_close:
+        if (
+            notify
+            and was_visible
+            and not getattr(self, '_is_submitting', False)
+            and self.on_close
+        ):
             self.on_close()
         self._is_submitting = False
 
