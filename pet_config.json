@@ -69,9 +69,9 @@
   },
   "chat": {
     "enabled": true,
-    "api_key": "7086f7a4-dfbe-4832-afbc-9d6b3c593ea1",
-    "model": "ep-20260325142137-jxd6t",
-    "base_url": "https://ark.cn-beijing.volces.com/api/v3",
+    "api_key": "sk-cDw9ZzNssWVB891v7c35De9609494dA3Ba7b9cE35f1b049c",
+    "model": "DeepSeek-R1-0528-Qwen3-8B",
+    "base_url": "https://api.edgefn.net/v1",
     "timeout_seconds": 30,
     "max_history": 6,
     "memory": {
@@ -170,7 +170,7 @@
       "play_sound_on_enter": true,
       "auto_return_ms": 0,
       "return_to": "idle",
-      "transition_duration_ms": 1200,
+      "transition_duration_ms": 1000,
       "offset_x": 0,
       "offset_y": 0,
       "flip_horizontal": false

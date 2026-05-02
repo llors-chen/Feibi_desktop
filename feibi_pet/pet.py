@@ -30,6 +30,13 @@ IDLE_FADE_START_RATIO = 0.65
 DEFAULT_TRANSITION_FADE_DURATION_MS = 150
 TRANSITION_FADE_STEPS = 6
 CHAT_TRANSITION_DURATION_MS = 1000
+ACTION_MENU_LABELS = {
+    "idle": "待机",
+    "push": "拍地板",
+    "eating": "吃东西",
+    "speaking": "说话",
+    "sleep": "睡觉",
+}
 
 
 class DesktopPet:
@@ -531,21 +538,23 @@ class DesktopPet:
         if not self.config:
             return
         menu = tk.Menu(self.root, tearoff=0)
-        menu.add_command(label="Chat", command=self.open_chat_dialog)
+        menu.add_command(label="聊天", command=self.open_chat_dialog)
         menu.add_separator()
         for action_name in self.config.actions:
             menu.add_command(
-                label=action_name.capitalize(),
+                label=self.get_action_menu_label(action_name),
                 command=lambda name=action_name: self.trigger_menu_action(name),
             )
         menu.add_separator()
-        menu.add_command(label="Reload Config", command=self.try_reload_from_menu)
-        menu.add_command(label="Exit", command=self.close)
+        menu.add_command(label="退出", command=self.close)
 
         try:
             menu.tk_popup(event.x_root, event.y_root)
         finally:
             menu.grab_release()
+
+    def get_action_menu_label(self, action_name: str) -> str:
+        return ACTION_MENU_LABELS.get(action_name, action_name)
 
     def trigger_menu_action(self, action_name: str) -> None:
         if not self.config or action_name not in self.action_sequences:
@@ -581,7 +590,7 @@ class DesktopPet:
         try:
             self.reload_config()
         except Exception as exc:
-            messagebox.showerror("Feibi Pet", f"Failed to reload config:\n{exc}")
+            messagebox.showerror("Feibi Pet", f"重新加载配置失败：\n{exc}")
 
     def open_chat_dialog(self) -> None:
         if not self.config:
