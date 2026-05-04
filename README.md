@@ -1,71 +1,84 @@
-# 最新版本是 FeibiPet_v0.0.1.zip 直接下载解压即可
-
 # Feibi Pet 桌面宠物
 
-`Feibi Pet` 是一个可配置的桌面宠物程序。它会读取 `pet_config.json` 中的配置，显示透明无边框桌宠窗口，播放 GIF/PNG 动作和音效，并支持基于大模型 API 的简单对话功能。
+当前打包版本：`FeibiPet_v0.0.1.zip`
 
-当前项目主要面向中文用户，常用操作包括：
+这是一个 Windows 桌面宠物程序。当前发布包已经打包好运行环境，解压后直接运行 `FeibiPet.exe` 即可，不需要先安装 Python 或依赖。
 
-- 显示桌面宠物
-- 拖动宠物位置
-- 右键打开菜单
-- 切换动作
-- 打开聊天输入框
-- 重新加载配置
-- 修改角色提示词
+## 快速开始
 
-## 功能说明
+1. 下载或找到 `FeibiPet_v0.0.1.zip`。
+2. 解压整个压缩包。
+3. 进入解压后的 `FeibiPet` 文件夹。
+4. 双击 `FeibiPet.exe` 启动桌宠。
 
-- 透明、无边框、可置顶的桌面宠物窗口
-- 通过 `pet_config.json` 配置窗口、动作、声音、聊天等功能
-- 每个动作可以配置一个或多个 GIF/PNG 图片
-- 支持动作随机播放和动作切换过渡
-- 支持进入动作时播放音效
-- 支持 OpenAI 兼容格式的大模型聊天接口
-- 支持从 `skills/*.txt` 加载角色提示词
-- 支持长期记忆，记忆文件默认保存在 `memory/chat_memory.json`
-- 右键菜单支持聊天、切换动作、重新加载配置和退出
+启动后：
 
-## 目录结构
+- 左键拖动菲比可以移动位置。
+- 右键菲比可以打开菜单。
+- 菜单里可以聊天、切换动作、退出程序。
+- 修改 `pet_config.json`、`skills/phoebe.txt` 或资源文件后，重启程序生效。
+
+## 当前发布包内容
+
+以当前 `dist/FeibiPet` 为准，发布包主要包含：
 
 ```text
-Feibi_desktop/
+FeibiPet/
+├─ FeibiPet.exe             程序入口，双击启动
+├─ pet_config.json          桌宠配置文件
 ├─ assets/
-│  ├─ gifs/             桌宠动作图片
-│  └─ sounds/           音效文件
-├─ feibi_pet/           程序源码
-│  ├─ chat_client.py    聊天 API 调用
-│  ├─ chat_memory.py    长期记忆
-│  ├─ chat_ui.py        聊天输入框和回复气泡
-│  ├─ config_loader.py  配置读取和校验
-│  ├─ pet.py            桌宠主逻辑
-│  └─ ...
-├─ memory/              聊天记忆文件
+│  ├─ gifs/                 动作图片
+│  ├─ images/
+│  └─ sounds/
 ├─ skills/
-│  └─ phoebe.txt        菲比角色提示词
-├─ main.py              启动入口
-├─ pet_config.json      主配置文件
-└─ README.md            使用说明
+│  └─ phoebe.txt            菲比角色提示词
+├─ memory/
+│  └─ chat_memory.json      聊天长期记忆
+└─ _internal/               打包运行库，请不要删除
 ```
 
-## 运行程序
+注意：`_internal` 是 PyInstaller 打包出来的运行库目录，`FeibiPet.exe` 依赖它。移动程序时请移动整个 `FeibiPet` 文件夹，不要只移动 exe。
 
-先安装依赖：
+## 功能
 
-```powershell
-pip install -r requirements.txt
+- 透明、无边框、置顶显示的桌宠窗口
+- 支持拖动位置
+- 支持右键菜单
+- 支持待机随机动作
+- 支持 `idle`、`push`、`eating`、`speaking`、`sleep` 五个动作
+- 支持 GIF/PNG 动作资源
+- 支持动作切换过渡、偏移和水平翻转
+- 支持音效包播放
+- 支持 OpenAI 兼容格式的大模型聊天接口
+- 支持 `skills/phoebe.txt` 角色提示词
+- 支持长期记忆，默认保存在 `memory/chat_memory.json`
+
+## 右键菜单
+
+当前程序右键菜单包含：
+
+- `聊天`：打开聊天输入框
+- `待机` / `推` / `吃` / `说话` / `睡觉`：切换到对应动作
+- `退出`：关闭程序
+
+## 配置文件
+
+发布包内的主配置文件是：
+
+```text
+pet_config.json
 ```
 
-启动桌宠：
+所有路径都按 `pet_config.json` 所在目录解析。也就是说，在发布包里写：
 
-```powershell
-python main.py
+```json
+"assets/gifs/idle.gif"
 ```
 
-如果需要使用另一份配置文件：
+实际对应：
 
-```powershell
-python main.py --config .\my-pet.json
+```text
+FeibiPet/assets/gifs/idle.gif
 ```
 
 ## window：窗口配置
@@ -88,18 +101,86 @@ python main.py --config .\my-pet.json
 }
 ```
 
-- `title`：窗口标题。
-- `stay_on_top`：是否置顶显示。
-- `draggable`：是否允许鼠标左键拖动。
+- `stay_on_top`：是否置顶。
+- `draggable`：是否允许左键拖动。
 - `click_through`：是否鼠标穿透。开启后可能不方便右键操作。
-- `transparent_color`：透明色。默认绿色用于窗口透明处理。
+- `transparent_color`：透明色，当前用于窗口透明处理。
 - `alpha`：窗口整体透明度，`1.0` 为不透明。
 - `scale`：桌宠缩放比例。
-- `scale_mode`：缩放算法，像素风推荐使用 `nearest`。
+- `scale_mode`：缩放算法，像素风推荐 `nearest`。
 - `initial_position.anchor`：初始位置锚点，可选 `top_left`、`top_right`、`bottom_left`、`bottom_right`。
 - `initial_position.x` / `y`：相对锚点的偏移距离。
 
-## audio：总音频配置
+## behavior：待机行为
+
+当前发布包默认待机动作池：
+
+```json
+"idle_actions": [
+  { "action": "idle", "weight": 20, "duration_ms": 4800 },
+  { "action": "speaking", "weight": 1, "duration_ms": 5000 },
+  { "action": "eating", "weight": 1, "duration_ms": 0 },
+  { "action": "sleep", "weight": 1, "duration_ms": 0 },
+  { "action": "push", "weight": 1, "duration_ms": 0 }
+]
+```
+
+- `default_action`：默认动作，当前是 `idle`。
+- `randomize_gif_on_loop`：同一个动作有多个图片时，循环时是否随机切换。
+- `transition_duration_ms`：默认动作切换过渡时间，单位毫秒。
+- `weight`：权重越大，越容易被随机选中。
+- `duration_ms`：动作持续时间。`0` 表示按程序逻辑返回默认动作。
+
+## actions：动作配置
+
+当前发布包配置了五个动作：
+
+| 动作名 | 菜单显示 | 当前资源 |
+| --- | --- | --- |
+| `idle` | 待机 | `assets/gifs/idle.gif` |
+| `push` | 推 | `assets/gifs/push.gif` |
+| `eating` | 吃 | `assets/gifs/eating.png` |
+| `speaking` | 说话 | `assets/gifs/talk.gif` |
+| `sleep` | 睡觉 | `assets/gifs/sleep.gif` |
+
+单个动作示例：
+
+```json
+"speaking": {
+  "gifs": ["assets/gifs/talk.gif"],
+  "sounds": [
+    "assets/sounds/soundpak0",
+    "assets/sounds/soundpak1"
+  ],
+  "play_sound_on_enter": true,
+  "auto_return_ms": 0,
+  "return_to": "idle",
+  "transition_duration_ms": 1000,
+  "offset_x": 0,
+  "offset_y": 0,
+  "flip_horizontal": false
+}
+```
+
+- `gifs`：动作图片列表，支持 GIF、PNG 等图片。
+- `sounds`：动作音效列表，可以写单个音频文件，也可以写音效文件夹。
+- `play_sound_on_enter`：进入该动作时是否播放音效。
+- `auto_return_ms`：从右键菜单触发该动作后多久自动返回，`0` 表示不按这个字段自动返回。
+- `return_to`：自动返回目标动作。
+- `transition_duration_ms`：进入该动作时的过渡时间。
+- `offset_x` / `offset_y`：图片偏移，用于不同动作尺寸对齐。
+- `flip_horizontal`：是否水平翻转图片。
+
+新增动作时，需要同时做这些事：
+
+1. 把图片或音效放进 `assets`。
+2. 在 `pet_config.json` 的 `actions` 里新增动作。
+3. 如果要让它待机随机出现，把动作加入 `behavior.idle_actions`。
+4. 如果要让它出现在聊天阶段，把动作填入 `chat.stages`。
+
+## audio / sound：声音配置
+
+总音频开关：
 
 ```json
 "audio": {
@@ -108,10 +189,7 @@ python main.py --config .\my-pet.json
 }
 ```
 
-- `enabled`：是否启用音频。
-- `volume_percent`：总音量百分比。
-
-## sound：循环音效配置
+音效包配置：
 
 ```json
 "sound": {
@@ -133,39 +211,18 @@ python main.py --config .\my-pet.json
 }
 ```
 
-- `enabled`：是否启用音效包播放。
-- `volume_percent`：音效音量百分比。
-- `speaking_intro`：进入说话状态时可播放的音效包。
+- `audio.enabled`：总音频开关。
+- `audio.volume_percent`：总音量。
+- `sound.enabled`：音效包开关。
+- `sound.volume_percent`：音效包音量。
+- `speaking_intro`：说话动作相关音效包。
 - `chat_loop`：等待模型回复时循环播放的音效包。
-- `loop_pause_seconds`：循环播放之间的间隔秒数。
-- `sounds`：音效文件或音效文件夹路径列表。
-
-## behavior：待机行为配置
-
-```json
-"behavior": {
-  "default_action": "idle",
-  "randomize_gif_on_loop": true,
-  "transition_duration_ms": 800,
-  "idle_actions": [
-    {
-      "action": "idle",
-      "weight": 20,
-      "duration_ms": 4800
-    }
-  ]
-}
-```
-
-- `default_action`：默认动作名称，必须存在于 `actions` 中。
-- `randomize_gif_on_loop`：同一个动作有多个图片时，是否循环时随机切换。
-- `transition_duration_ms`：普通动作切换时的默认过渡时间，单位毫秒。
-- `idle_actions`：待机时可随机触发的动作列表。
-- `idle_actions[].action`：要触发的动作名称。
-- `idle_actions[].weight`：权重，越大越容易出现。
-- `idle_actions[].duration_ms`：动作持续时间。`0` 表示不自动按这个时间返回。
+- `loop_pause_seconds`：循环播放间隔。
+- `sounds`：音频文件或文件夹路径列表。
 
 ## chat：聊天配置
+
+当前发布包开启了聊天功能，并使用 OpenAI 兼容接口：
 
 ```json
 "chat": {
@@ -190,43 +247,23 @@ python main.py --config .\my-pet.json
 }
 ```
 
-- `enabled`：是否启用聊天功能。
-- `api_key`：大模型 API Key。
+- `enabled`：是否启用聊天。
+- `api_key`：大模型 API Key。建议换成你自己的 Key。
 - `model`：模型名称。
-- `base_url`：API 地址。当前代码使用 OpenAI 兼容的 `chat.completions` 格式。
-- `timeout_seconds`：接口超时时间，单位秒。
-- `max_history`：每次请求带上的最近对话轮数。
-- `skill`：角色提示词名称，例如 `phoebe` 对应 `skills/phoebe.txt`。
+- `base_url`：OpenAI 兼容接口地址。
+- `timeout_seconds`：请求超时时间。
+- `max_history`：每次请求携带的最近对话轮数。
+- `skill`：角色提示词名称，`phoebe` 对应 `skills/phoebe.txt`。
 - `skills_dir`：角色提示词目录。
-- `system_prompt`：额外追加的系统提示词。通常留空即可。
+- `system_prompt`：额外系统提示词。
 - `bubble_max_width`：回复气泡最大宽度。
 - `bubble_auto_hide_ms`：回复气泡自动隐藏时间，单位毫秒。
 
-聊天接口说明：
-
-- 当前聊天调用使用 OpenAI 兼容格式。
-- 如果服务商提供 `/v1/chat/completions` 或 OpenAI-compatible 接口，通常只需要修改 `api_key`、`model`、`base_url`。
-- Claude、Gemini 等原生 API 格式不完全一致，不能只改配置，需要额外适配代码。
-
-## chat.memory：长期记忆配置
-
-```json
-"memory": {
-  "enabled": true,
-  "path": "memory/chat_memory.json",
-  "max_bytes": 1024000,
-  "recent_turns_after_compress": 10,
-  "retrieval_limit": 5
-}
-```
-
-- `enabled`：是否启用长期记忆。
-- `path`：记忆文件保存路径。
-- `max_bytes`：记忆文件最大体积。超过后会压缩旧记忆。
-- `recent_turns_after_compress`：压缩后保留的最近对话轮数。
-- `retrieval_limit`：每次对话最多检索几条相关记忆。
+聊天接口需要兼容 `/v1/chat/completions`。如果服务商写着 OpenAI-compatible，通常修改 `api_key`、`model`、`base_url` 即可；Claude、Gemini 等原生接口不能只靠改配置直接接入。
 
 ## chat.stages：聊天阶段动作
+
+当前发布包聊天阶段：
 
 ```json
 "stages": {
@@ -263,78 +300,66 @@ python main.py --config .\my-pet.json
 }
 ```
 
-- `input`：打开输入框时的动作。
-- `waiting`：等待模型回复时的动作。
-- `reply`：模型回复成功后的动作。
-- `error`：模型回复失败后的动作。
-- `action`：阶段对应的动作名称，必须存在于 `actions` 中。
-- `duration_ms`：阶段持续时间，单位毫秒。
+- `input`：打开输入框时。
+- `waiting`：等待模型回复时。
+- `reply`：模型回复成功后。
+- `error`：模型回复失败后。
+- `action`：阶段对应动作，必须存在于 `actions`。
+- `duration_ms`：阶段持续时间。
 - `transition_duration_ms`：切换到该阶段动作的过渡时间。
-- `play_sound`：是否播放该阶段配置的声音。
-- `sounds`：该阶段播放的声音列表。为空时不额外播放。
+- `play_sound`：是否播放该阶段声音。
+- `sounds`：阶段额外声音列表。为空时使用动作自身声音或不播放。
 
-## actions：动作配置
+## 角色提示词和记忆
 
-```json
-"actions": {
-  "idle": {
-    "gifs": [
-      "assets/gifs/idle.gif"
-    ],
-    "sounds": [],
-    "play_sound_on_enter": false,
-    "auto_return_ms": 0,
-    "return_to": "idle",
-    "transition_duration_ms": 800,
-    "offset_x": 0,
-    "offset_y": 0,
-    "flip_horizontal": false
-  }
-}
-```
-
-`actions` 下面的每个键都是一个动作名称，例如 `idle`、`push`、`eating`、`speaking`、`sleep`。
-
-- `gifs`：动作图片列表，支持 GIF、PNG 等可加载图片。
-- `sounds`：动作音效列表。
-- `play_sound_on_enter`：进入该动作时是否播放 `sounds`。
-- `auto_return_ms`：进入该动作后多久自动返回，单位毫秒。`0` 表示不自动返回。
-- `return_to`：自动返回时切换到哪个动作。
-- `transition_duration_ms`：进入该动作时的过渡时间。不填则使用全局默认值。
-- `offset_x` / `offset_y`：动作图片显示偏移，用于不同图片尺寸对齐。
-- `flip_horizontal`：是否水平翻转图片。
-
-新增动作时，需要：
-
-1. 在 `actions` 中新增动作配置。
-2. 确认 `gifs` 指向的图片文件存在。
-3. 如果要待机随机触发，把动作名加入 `behavior.idle_actions`。
-4. 如果要用于聊天阶段，把动作名填入 `chat.stages.*.action`。
-
-## 角色提示词
-
-角色提示词放在 `skills` 目录中。例如：
+角色提示词：
 
 ```text
 skills/phoebe.txt
 ```
 
-如果配置中写：
+修改菲比的人设、语气和行为规则时，改这个文件。修改后重启程序。
 
-```json
-"skill": "phoebe",
-"skills_dir": "skills"
-```
-
-程序会读取：
+长期记忆：
 
 ```text
-skills/phoebe.txt
+memory/chat_memory.json
 ```
 
-修改角色性格、说话风格、记忆规则时，优先修改这个文件。重启程序。
+如果想清空记忆，可以关闭程序后清空这个文件内容，或替换成空 JSON 结构。
+
+## 开发运行
+
+如果你要从源码运行，而不是使用发布包：
+
+```powershell
+pip install -r requirements.txt
+python main.py
+```
+
+使用自定义配置：
+
+```powershell
+python main.py --config .\my-pet.json
+```
+
+重新打包：
+
+```powershell
+pyinstaller feibi_pet.spec --clean --noconfirm
+```
+
+打包结果会生成在：
+
+```text
+dist/FeibiPet/
+```
 
 ## 常见问题
+
+### 双击 exe 没反应
+
+请确认是从完整的 `FeibiPet` 文件夹里启动，不要只拿出 `FeibiPet.exe`。`_internal`、`assets`、`skills`、`pet_config.json` 都需要保留在同一层目录。
 
 ### 修改配置后没有生效
 
@@ -345,18 +370,18 @@ skills/phoebe.txt
 请检查：
 
 - `chat.enabled` 是否为 `true`
-- `chat.api_key` 是否填写
+- `chat.api_key` 是否有效
 - `chat.model` 是否填写正确
-- `chat.base_url` 是否为 OpenAI 兼容接口地址
+- `chat.base_url` 是否是 OpenAI 兼容接口地址
 - 网络是否能访问该接口
-- 暴露的api是垃圾口，是不是会出错，建议更换为自己的
+- 默认示例接口或 Key 可能不可用，建议换成自己的服务配置
 
 ### 图片不显示或报错
 
 请检查：
 
 - `actions.<动作名>.gifs` 中的路径是否正确
-- 图片文件是否真的存在
+- 图片文件是否存在于发布包内
 - 路径是否相对于 `pet_config.json`
 
 ### 音效不播放
