@@ -1,3 +1,5 @@
+# 最新版本是 FeibiPet_v0.0.1.zip 直接下载解压即可
+
 # Feibi Pet 桌面宠物
 
 `Feibi Pet` 是一个可配置的桌面宠物程序。它会读取 `pet_config.json` 中的配置，显示透明无边框桌宠窗口，播放 GIF/PNG 动作和音效，并支持基于大模型 API 的简单对话功能。
